@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>執房排班表</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F5F3EE;
+    --surface: #FFFFFF;
+    --surface2: #EDEBE6;
+    --border: rgba(0,0,0,0.09);
+    --border-strong: rgba(0,0,0,0.16);
+    --text: #1A1814;
+    --text-secondary: #6B6860;
+    --text-muted: #A09E98;
+    --accent: #2D5016;
+    --accent-light: #E8F0DF;
+    --accent-mid: #4A7A28;
+    --mk: #C17A2E;
+    --mk-light: #FBF0E0;
+    --lck: #1F5B78;
+    --lck-light: #E0EFF6;
+    --kt: #6B3F8A;
+    --kt-light: #F0E8F8;
+    --aimee: #B5385A;
+    --aimee-light: #FCEDF1;
+    --ken: #1F5B78;
+    --ken-light: #E0EFF6;
+    --mama: #6B3F8A;
+    --mama-light: #F0E8F8;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .app-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .app-title span { color: var(--accent-mid); }
+
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .sync-btn {
+    background: var(--accent-light);
+    color: var(--accent);
+    border: 1px solid rgba(45,80,22,0.2);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .sync-btn:active { opacity: 0.7; }
+  .sync-btn:disabled { opacity: 0.5; }
+
+  .date-nav {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border-radius: 20px;
+    padding: 2px;
+  }
+  .date-nav button {
+    background: none; border: none;
+    width: 30px; height: 30px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+  }
+  .date-nav button:active { background: var(--border); }
+  .date-label { flex: 1; text-align: center; font-size: 13px; font-weight: 600; }
+
+  .tab-bar {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 4px 9px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-light); }
+
+  .main { padding: 12px; padding-bottom: 40px; }
+
+  .day-section { margin-bottom: 16px; }
+  .day-header {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    margin-bottom: 8px; padding-left: 2px;
+  }
+  .day-header.today { color: var(--accent-mid); }
+
+  .room-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: opacity 0.2s;
+  }
+  .room-card.done { opacity: 0.55; }
+
+  .card-header {
+    display: flex; align-items: center;
+    padding: 10px 12px; gap: 8px;
+  }
+  .region-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-mk { background: var(--mk); }
+  .dot-lck { background: var(--lck); }
+  .dot-kt { background: var(--kt); }
+
+  .card-header-info { flex: 1; min-width: 0; }
+  .room-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .region-tag { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+  .time-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text-secondary);
+    background: var(--surface2);
+    border-radius: 6px; padding: 2px 7px;
+    flex-shrink: 0;
+  }
+
+  .card-body { padding: 0 12px 12px; }
+  .card-divider { height: 1px; background: var(--border); margin: 0 -12px 10px; }
+
+  .assign-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .assign-label { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .staff-chips { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+
+  .staff-chip {
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: opacity 0.12s, transform 0.1s;
+    user-select: none;
+  }
+  .chip-aimee { background: var(--aimee-light); color: var(--aimee); border-color: rgba(181,56,90,0.2); }
+  .chip-ken   { background: var(--ken-light);   color: var(--ken);   border-color: rgba(31,91,120,0.2); }
+  .chip-mama  { background: var(--mama-light);  color: var(--mama);  border-color: rgba(107,63,138,0.2); }
+  .staff-chip.selected { opacity: 1; }
+  .staff-chip:not(.selected) { opacity: 0.35; }
+  .staff-chip:active { transform: scale(0.94); }
+
+  .done-btn {
+    margin-left: auto;
+    background: none;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 4px 11px;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .done-btn.completed { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+
+  .note-row { margin-top: 8px; }
+  .note-input {
+    width: 100%;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--text); background: var(--bg);
+    resize: none; min-height: 36px; max-height: 80px;
+    line-height: 1.5;
+  }
+  .note-input:focus { outline: none; border-color: var(--accent-mid); background: var(--surface); }
+  .note-input::placeholder { color: var(--text-muted); }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
+  .stat-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 12px 8px; text-align: center; }
+  .stat-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; margin: 0 auto 8px; }
+  .stat-count { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+  .stat-name { font-size: 11px; color: var(--text-muted); }
+  .stat-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 8px; padding-left: 2px; }
+  .stats-row { background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; padding: 10px 12px; margin-bottom: 6px; gap: 10px; }
+  .stats-row-label { width: 48px; font-size: 12px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+  .stats-row-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .stats-row-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .stats-row-count { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; min-width: 20px; text-align: right; }
+
+  /* Room stats breakdown */
+  .room-stats { margin-top: 14px; }
+  .room-stat-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .room-stat-row:last-child { border-bottom: none; }
+  .room-stat-name { color: var(--text-secondary); }
+  .room-stat-count { font-family: 'DM Mono', monospace; font-weight: 500; }
+
+  /* Settings */
+  .settings-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; }
+  .settings-section-title { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.6px; text-transform: uppercase; padding: 12px 14px 6px; }
+  .settings-room-row { padding: 10px 14px; border-top: 1px solid var(--border); }
+  .settings-room-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+  .settings-input { width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 10px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text); background: var(--bg); }
+  .settings-input:focus { outline: none; border-color: var(--accent-mid); }
+  .settings-input::placeholder { color: var(--text-muted); font-size: 10px; }
+
+  .proxy-block { padding: 10px 14px 12px; border-top: 1px solid var(--border); }
+  .proxy-block label { font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+
+  .save-btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; margin-top: 4px; }
+  .save-btn:active { opacity: 0.85; }
+
+  .info-box { margin-top: 14px; padding: 12px 14px; background: var(--accent-light); border-radius: var(--radius); border: 1px solid rgba(45,80,22,0.18); }
+  .info-box-title { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 5px; }
+  .info-box-body { font-size: 11px; color: var(--accent); line-height: 1.75; opacity: 0.88; }
+
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 13px; line-height: 1.9; }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  .no-event { text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px; }
+
+  .loading { text-align: center; padding: 40px 20px; }
+  .spinner { width: 24px; height: 24px; border: 2px solid var(--border-strong); border-top-color: var(--accent-mid); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 12px; color: var(--text-muted); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--text); color: white; border-radius: 20px; padding: 9px 18px; font-size: 13px; font-weight: 500; z-index: 999; transition: transform 0.25s ease; white-space: nowrap; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .error-banner { background: #FCEDF1; border: 1px solid rgba(181,56,90,0.2); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; font-size: 12px; color: var(--aimee); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="header-top">
+    <div class="app-title">執房<span>排班</span></div>
+    <button class="sync-btn" id="sync-btn" onclick="syncAll()">↻ 同步</button>
+  </div>
+  <div class="date-nav">
+    <button onclick="changeWeek(-1)">‹</button>
+    <div class="date-label" id="week-label">—</div>
+    <button onclick="changeWeek(1)">›</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchView('schedule',this)">📅 排班</div>
+  <div class="tab" onclick="switchView('stats',this)">📊 統計</div>
+  <div class="tab" onclick="switchView('settings',this)">⚙️ 設定</div>
+</div>
+
+<div class="main">
+
+  <!-- SCHEDULE -->
+  <div class="view active" id="view-schedule">
+    <div id="schedule-content">
+      <div class="empty-state">
+        <div class="empty-icon">🏠</div>
+        請先到「⚙️ 設定」<br>輸入各房間的 ICS 連結<br>再點擊「↻ 同步」
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="view" id="view-stats">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-avatar" style="background:var(--aimee-light);color:var(--aimee)">A</div>
+        <div class="stat-count" id="stat-aimee">0</div>
+        <div class="stat-name">Aimee</div>
+        <div class="stat-sub" id="stat-month-a">本月</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-avatar" style="background:var(--ken-light);color:var(--ken)">K</div>
+        <div class="stat-count" id="stat-ken">0</div>
+        <div class="stat-name">Ken</div>
+        <div class="stat-sub">本月</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-avatar" style="background:var(--mama-light);color:var(--mama)">媽</div>
+        <div class="stat-count" id="stat-mama">0</div>
+        <div class="stat-name">媽媽</div>
+        <div class="stat-sub">本月</div>
+      </div>
+    </div>
+
+    <div class="section-label">地區（本月完成）</div>
+    <div class="stats-row">
+      <div class="stats-row-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--mk);display:inline-block;flex-shrink:0"></span>旺角</div>
+      <div class="stats-row-bar"><div class="stats-row-fill" id="bar-mk" style="width:0%;background:var(--mk)"></div></div>
+      <div class="stats-row-count" id="count-mk">0</div>
+    </div>
+    <div class="stats-row">
+      <div class="stats-row-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--lck);display:inline-block;flex-shrink:0"></span>荔枝角</div>
+      <div class="stats-row-bar"><div class="stats-row-fill" id="bar-lck" style="width:0%;background:var(--lck)"></div></div>
+      <div class="stats-row-count" id="count-lck">0</div>
+    </div>
+    <div class="stats-row">
+      <div class="stats-row-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--kt);display:inline-block;flex-shrink:0"></span>觀塘</div>
+      <div class="stats-row-bar"><div class="stats-row-fill" id="bar-kt" style="width:0%;background:var(--kt)"></div></div>
+      <div class="stats-row-count" id="count-kt">0</div>
+    </div>
+
+    <div class="stats-card" style="margin-top:14px">
+      <div class="section-label">各房間（本月完成次數）</div>
+      <div class="settings-card room-stats" id="room-stats-list">
+        <div class="room-stat-row"><span class="room-stat-name" style="color:var(--text-muted)">暫無資料</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="view" id="view-settings">
+    <div class="settings-card">
+      <div class="settings-section-title">旺角 MK</div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--mk);display:inline-block"></span>冬日細語 (MK_2505)</div>
+        <input class="settings-input" type="url" id="ics-mk2505" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--mk);display:inline-block"></span>夏日微風 (MK_4FB3)</div>
+        <input class="settings-input" type="url" id="ics-mk4fb3" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-section-title">觀塘 KT</div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--kt);display:inline-block"></span>玫瑰莊園 (1119)</div>
+        <input class="settings-input" type="url" id="ics-kt1119" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--kt);display:inline-block"></span>蔚藍深空 (1120)</div>
+        <input class="settings-input" type="url" id="ics-kt1120" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--kt);display:inline-block"></span>楓橋夜泊 (1121)</div>
+        <input class="settings-input" type="url" id="ics-kt1121" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-section-title">荔枝角 LCK</div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--lck);display:inline-block"></span>藍霧海岸 (G405)</div>
+        <input class="settings-input" type="url" id="ics-lckg405" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--lck);display:inline-block"></span>落日珊瑚 (G406)</div>
+        <input class="settings-input" type="url" id="ics-lckg406" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--lck);display:inline-block"></span>碧海青風 (G407)</div>
+        <input class="settings-input" type="url" id="ics-lckg407" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-room-row">
+        <div class="settings-room-label"><span style="width:8px;height:8px;border-radius:50%;background:var(--lck);display:inline-block"></span>月下金沙 (G408)</div>
+        <input class="settings-input" type="url" id="ics-lckg408" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-section-title">進階</div>
+      <div class="proxy-block">
+        <label>CORS Proxy（讀取 ICS 必要）</label>
+        <input class="settings-input" type="url" id="proxy-url" value="https://api.allorigins.win/raw?url=">
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="saveSettings()">💾 儲存設定</button>
+
+    <div class="info-box">
+      <div class="info-box-title">📋 如何取得 ICS 連結</div>
+      <div class="info-box-body">
+        1. 開啟 Google Calendar<br>
+        2. 點擊日曆旁的 ⋮ → 「設定」<br>
+        3. 向下捲動到「整合日曆」<br>
+        4. 複製「公開網址（iCal 格式）」<br>
+        5. 重複以上步驟，9間房各貼一條
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Room config ─────────────────────────────────────────────
+const ROOMS = [
+  { id:'mk2505',  name:'冬日細語', code:'MK_2505',  region:'MK',  regionName:'旺角' },
+  { id:'mk4fb3',  name:'夏日微風', code:'MK_4FB3',  region:'MK',  regionName:'旺角' },
+  { id:'kt1119',  name:'玫瑰莊園', code:'1119',     region:'KT',  regionName:'觀塘' },
+  { id:'kt1120',  name:'蔚藍深空', code:'1120',     region:'KT',  regionName:'觀塘' },
+  { id:'kt1121',  name:'楓橋夜泊', code:'1121',     region:'KT',  regionName:'觀塘' },
+  { id:'lckg405', name:'藍霧海岸', code:'LCK_G405', region:'LCK', regionName:'荔枝角' },
+  { id:'lckg406', name:'落日珊瑚', code:'LCK_G406', region:'LCK', regionName:'荔枝角' },
+  { id:'lckg407', name:'碧海青風', code:'LCK_G407', region:'LCK', regionName:'荔枝角' },
+  { id:'lckg408', name:'月下金沙', code:'LCK_G408', region:'LCK', regionName:'荔枝角' },
+];
+
+const SKIP_PATTERNS = /^(業主|交租|冬日$|夏日$|冬$|夏$)/;
+
+// ── State ───────────────────────────────────────────────────
+let state = {
+  weekOffset: 0,
+  events: [],
+  tasks: {},
+  ics: {},
+  proxy: 'https://api.allorigins.win/raw?url='
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('pr_sched_v2');
+    if (s) {
+      const p = JSON.parse(s);
+      state.tasks = p.tasks || {};
+      state.ics   = p.ics   || {};
+      state.proxy = p.proxy || state.proxy;
+    }
+  } catch(e) {}
+  ROOMS.forEach(r => {
+    const el = document.getElementById('ics-' + r.id);
+    if (el) el.value = state.ics[r.id] || '';
+  });
+  document.getElementById('proxy-url').value = state.proxy;
+  // restore cached events
+  try {
+    const ec = sessionStorage.getItem('pr_events');
+    if (ec) {
+      state.events = JSON.parse(ec).map(e => ({
+        ...e,
+        start: new Date(e.start),
+        end:   e.end ? new Date(e.end) : null
+      }));
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  localStorage.setItem('pr_sched_v2', JSON.stringify({
+    tasks: state.tasks,
+    ics:   state.ics,
+    proxy: state.proxy
+  }));
+}
+
+function saveSettings() {
+  ROOMS.forEach(r => {
+    const el = document.getElementById('ics-' + r.id);
+    state.ics[r.id] = el ? el.value.trim() : '';
+  });
+  state.proxy = document.getElementById('proxy-url').value.trim();
+  saveState();
+  showToast('✓ 設定已儲存');
+}
+
+// ── Views ────────────────────────────────────────────────────
+function switchView(v, tab) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  tab.classList.add('active');
+  if (v === 'stats') renderStats();
+}
+
+// ── Week nav ─────────────────────────────────────────────────
+function getWeekDays(offset) {
+  const now = new Date();
+  const dow = now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1) + offset * 7);
+  mon.setHours(0,0,0,0);
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    return d;
+  });
+}
+
+function changeWeek(delta) {
+  state.weekOffset += delta;
+  const days = getWeekDays(state.weekOffset);
+  const s = days[0], e = days[6];
+  document.getElementById('week-label').textContent =
+    `${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}`;
+  renderSchedule();
+}
+
+function isToday(d) {
+  const t = new Date();
+  return d.toDateString() === t.toDateString();
+}
+
+function fmtDate(d) {
+  const w = ['日','一','二','三','四','五','六'];
+  return `${d.getMonth()+1}/${d.getDate()} 週${w[d.getDay()]}`;
+}
+
+// ── ICS fetch + parse ─────────────────────────────────────────
+function parsedt(s) {
+  if (!s) return null;
+  const c = s.replace(/[TZ\-:]/g,'');
+  const y=+c.slice(0,4), mo=+c.slice(4,6)-1, d=+c.slice(6,8);
+  const h=c.length>8?+c.slice(8,10):0, mi=c.length>10?+c.slice(10,12):0;
+  return new Date(y,mo,d,h,mi);
+}
+
+function parseICS(text, room) {
+  const events = [];
+  const blocks = text.split('BEGIN:VEVENT');
+  for (let i = 1; i < blocks.length; i++) {
+    const blk = blocks[i];
+    const get = k => { const m = blk.match(new RegExp(k+'[^:]*:([^\\r\\n]+')); return m?m[1].trim():''; };
+    const summary = get('SUMMARY');
+    if (!summary || SKIP_PATTERNS.test(summary.trim())) continue;
+    const start = parsedt(get('DTSTART'));
+    const end   = parsedt(get('DTEND'));
+    if (!start) continue;
+    const fmt = d => d ? `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : '';
+    const uid = get('UID') || (room.id + summary + get('DTSTART'));
+    events.push({ id: uid, roomId: room.id, roomName: room.name, roomCode: room.code, region: room.region, regionName: room.regionName, start, end, timeStr: fmt(start) + (end?'–'+fmt(end):'') });
+  }
+  return events;
+}
+
+async function fetchRoom(room) {
+  const url = state.ics[room.id];
+  if (!url) return [];
+  try {
+    const res = await fetch(state.proxy + encodeURIComponent(url), { cache: 'no-cache' });
+    if (!res.ok) throw new Error(res.status);
+    const text = await res.text();
+    return parseICS(text, room);
+  } catch(e) {
+    console.warn('ICS error', room.id, e.message);
+    return null; // null = error
+  }
+}
+
+async function syncAll() {
+  const hasAny = ROOMS.some(r => state.ics[r.id]);
+  if (!hasAny) { showToast('請先在設定頁輸入 ICS 連結'); return; }
+
+  const btn = document.getElementById('sync-btn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  document.getElementById('schedule-content').innerHTML = `<div class="loading"><div class="spinner"></div><div class="loading-text">正在讀取 9 間房日曆…</div></div>`;
+
+  const results = await Promise.all(ROOMS.map(r => fetchRoom(r)));
+
+  const errors = [];
+  state.events = [];
+  results.forEach((r, i) => {
+    if (r === null) errors.push(ROOMS[i].name);
+    else state.events.push(...r);
+  });
+
+  try {
+    sessionStorage.setItem('pr_events', JSON.stringify(state.events.map(e=>({...e, start:e.start.toISOString(), end:e.end?e.end.toISOString():null}))));
+  } catch(e) {}
+
+  btn.textContent = '↻ 同步';
+  btn.disabled = false;
+
+  if (errors.length) showToast(`⚠️ ${errors.join('/')} 讀取失敗`);
+  else showToast(`✓ 同步完成，共 ${state.events.length} 筆預訂`);
+
+  renderSchedule();
+}
+
+// ── Render schedule ───────────────────────────────────────────
+function renderSchedule() {
+  const days = getWeekDays(state.weekOffset);
+  const container = document.getElementById('schedule-content');
+  const hasICS = ROOMS.some(r => state.ics[r.id]);
+  if (!hasICS) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🏠</div>請先到「⚙️ 設定」<br>輸入各房間的 ICS 連結<br>再點擊「↻ 同步」</div>`;
+    return;
+  }
+
+  let html = '';
+  for (const day of days) {
+    const evs = state.events.filter(e =>
+      e.start.getFullYear()===day.getFullYear() &&
+      e.start.getMonth()===day.getMonth() &&
+      e.start.getDate()===day.getDate()
+    ).sort((a,b) => a.start - b.start);
+
+    if (!evs.length) continue;
+    const today = isToday(day);
+    html += `<div class="day-section">
+      <div class="day-header ${today?'today':''}">${today?'📍 今天  ':''}${fmtDate(day)}</div>`;
+    evs.forEach(ev => { html += renderCard(ev); });
+    html += `</div>`;
+  }
+
+  container.innerHTML = html || `<div class="no-event">本週沒有預訂紀錄</div>`;
+}
+
+function dotClass(region) {
+  return { MK:'dot-mk', LCK:'dot-lck', KT:'dot-kt' }[region] || '';
+}
+
+function renderCard(ev) {
+  const task = state.tasks[ev.id] || { staff:[], done:false, note:'' };
+  const chips = ['Aimee','Ken','媽媽'].map(s => {
+    const cls = { Aimee:'chip-aimee', Ken:'chip-ken', '媽媽':'chip-mama' }[s];
+    const sel = task.staff.includes(s) ? 'selected' : '';
+    return `<div class="staff-chip ${cls} ${sel}" onclick="toggleStaff('${esc(ev.id)}','${s}',this)">${s}</div>`;
+  }).join('');
+
+  return `<div class="room-card ${task.done?'done':''}" id="card-${esc(ev.id)}">
+    <div class="card-header">
+      <span class="region-dot ${dotClass(ev.region)}"></span>
+      <div class="card-header-info">
+        <div class="room-name">${ev.roomName}</div>
+        <div class="region-tag">${ev.regionName}</div>
+      </div>
+      <span class="time-badge">${ev.timeStr||'—'}</span>
+    </div>
+    <div class="card-body">
+      <div class="card-divider"></div>
+      <div class="assign-row">
+        <span class="assign-label">負責</span>
+        <div class="staff-chips">${chips}</div>
+        <button class="done-btn ${task.done?'completed':''}" onclick="toggleDone('${esc(ev.id)}',this)">
+          ${task.done?'✓ 完成':'完成'}
+        </button>
+      </div>
+      <div class="note-row">
+        <textarea class="note-input" placeholder="備注（問題、特殊情況）…" rows="1"
+          onchange="saveNote('${esc(ev.id)}',this.value)">${task.note||''}</textarea>
+      </div>
+    </div>
+  </div>`;
+}
+
+function esc(s) { return s.replace(/'/g,"\\'"); }
+
+// ── Task interactions ──────────────────────────────────────────
+function ensureTask(id) {
+  if (!state.tasks[id]) state.tasks[id] = { staff:[], done:false, note:'' };
+}
+function toggleStaff(id, name, el) {
+  ensureTask(id);
+  const t = state.tasks[id];
+  const i = t.staff.indexOf(name);
+  if (i > -1) { t.staff.splice(i,1); el.classList.remove('selected'); }
+  else { t.staff.push(name); el.classList.add('selected'); }
+  saveState();
+}
+function toggleDone(id, btn) {
+  ensureTask(id);
+  const t = state.tasks[id];
+  t.done = !t.done;
+  btn.textContent = t.done ? '✓ 完成' : '完成';
+  btn.classList.toggle('completed', t.done);
+  const card = document.getElementById('card-' + id.replace(/'/g,"\\'"));
+  if (card) card.classList.toggle('done', t.done);
+  saveState();
+  showToast(t.done ? '✓ 已標記完成' : '取消完成');
+}
+function saveNote(id, val) {
+  ensureTask(id);
+  state.tasks[id].note = val;
+  saveState();
+}
+
+// ── Stats ──────────────────────────────────────────────────────
+function renderStats() {
+  const now = new Date();
+  const mo = now.getMonth(), yr = now.getFullYear();
+  const staff = { Aimee:0, Ken:0, '媽媽':0 };
+  const regions = { MK:0, LCK:0, KT:0 };
+  const roomCounts = {};
+  ROOMS.forEach(r => roomCounts[r.id] = 0);
+
+  for (const [id, task] of Object.entries(state.tasks)) {
+    if (!task.done) continue;
+    const ev = state.events.find(e => e.id === id);
+    if (!ev || ev.start.getMonth()!==mo || ev.start.getFullYear()!==yr) continue;
+    task.staff.forEach(s => { if (staff[s]!==undefined) staff[s]++; });
+    if (regions[ev.region]!==undefined) regions[ev.region]++;
+    if (roomCounts[ev.roomId]!==undefined) roomCounts[ev.roomId]++;
+  }
+
+  document.getElementById('stat-aimee').textContent = staff['Aimee'];
+  document.getElementById('stat-ken').textContent   = staff['Ken'];
+  document.getElementById('stat-mama').textContent  = staff['媽媽'];
+
+  const total = Math.max(1, Object.values(regions).reduce((a,b)=>a+b,0));
+  ['MK','LCK','KT'].forEach(r => {
+    const key = r.toLowerCase();
+    document.getElementById('count-'+key).textContent = regions[r];
+    document.getElementById('bar-'+key).style.width = Math.round(regions[r]/total*100)+'%';
+  });
+
+  const monthName = `${now.getMonth()+1}月`;
+  document.getElementById('stat-month-a').textContent = monthName;
+
+  // Room breakdown
+  const list = document.getElementById('room-stats-list');
+  const sorted = ROOMS.slice().sort((a,b) => (roomCounts[b.id]||0)-(roomCounts[a.id]||0));
+  list.innerHTML = sorted.map(r =>
+    `<div class="room-stat-row">
+      <span class="room-stat-name" style="display:flex;align-items:center;gap:6px">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--${r.region.toLowerCase()});display:inline-block;flex-shrink:0"></span>
+        ${r.name}
+      </span>
+      <span class="room-stat-count">${roomCounts[r.id]||0}</span>
+    </div>`
+  ).join('');
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── Init ───────────────────────────────────────────────────────
+loadState();
+changeWeek(0);
+</script>
+</body>
+</html>
